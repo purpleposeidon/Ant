@@ -7,7 +7,7 @@ int HEIGHT = 40; //NOTE: I never pay attention to TODO crap >_>
 int NEST_SIZE = 2;
 int SEED = 0;
 int DISABLE_FALLEN = 1;
-
+int LOOP = 0;
 
 
 #include <stdlib.h>
@@ -139,7 +139,7 @@ void step(s_plane *plane, s_ant *ant) {
         ant->angle = NORTH;
         break;
       default:
-        printf("Ant not pointing in a known direction.\n");
+        fprintf(stderr, "Ant not pointing in a known direction.\n");
         exit(EXIT_FAILURE);
     }
   }
@@ -159,7 +159,7 @@ void step(s_plane *plane, s_ant *ant) {
         ant->angle = SOUTH;
         break;
       default:
-        printf("Ant not pointing in a known direction.\n");
+        fprintf(stderr, "Ant not pointing in a known direction.\n");
         exit(EXIT_FAILURE);
     }
   }
@@ -180,7 +180,7 @@ void step(s_plane *plane, s_ant *ant) {
         ant->x--;
         break;
       default:
-        printf("Ant not pointing in a known direction.\n");
+        fprintf(stderr, "Ant not pointing in a known direction.\n");
         exit(EXIT_FAILURE);
   }
 }
@@ -193,10 +193,14 @@ void show_cursor() {
   printf("\x1b[?25h"); //cursor show
 }
 
+void clear_screen() {
+  printf("\x1b[2J"); //clear screen
+}
 
 void handle_sig(int signum) {
   if (simulate) {
     simulate = 0;
+    LOOP = 0; //otherwise it loops forever
   }
   else {
     //seriously!
@@ -208,7 +212,7 @@ void init_terminal() {
   //crap for nice output
   setvbuf(stdin, (char *) NULL, _IONBF, 0); //printf flushes immediately
   //XXX It's supposed to, anyways. It doesn't actually.
-  printf("\x1b[2J"); //clear screen
+  clear_screen();
   printf("\x1b[?25l"); //cursor hide
   atexit(show_cursor);
   signal(SIGINT, handle_sig);
@@ -221,10 +225,11 @@ float frandom() {
 void parse_args(int argc, char **argv) {
   char usage[] =
   "Usage: \n" \
-  "  ant [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-e] [-d DELAY] [-s SEED] [-b BORDER]\n" \
+  "  ant [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-s SEED] [-b BORDER]\n" \
   "-a   Sets how many ants to use\n" \
   "-w   Sets the map width\n" \
   "-h   Sets the map height\n" \
+  "-l   Loop the simulation\n" \
   "-e   Ends the simulation if an ant touches the edge (default = no)\n" \
   "-d   Delay, in seconds (default = .0005)\n" \
   "-s   Sets the seed for ant placement (default = current time)\n" \
@@ -238,14 +243,13 @@ void parse_args(int argc, char **argv) {
     var = func(optarg); \
   } \
   else { \
-    printf("-%c expected argument.\n", c); \
+    fprintf(stderr, "-%c expected argument.\n", c); \
     USE_FAIL; \
   } \
 } while (0)
   opterr = 1;
   char c;
-  while ((c = getopt (argc, argv, "a:w:h:ed:s:b:")) != -1) {
-    printf("Got arg.\n");
+  while ((c = getopt (argc, argv, "a:w:h:led:s:b:")) != -1) {
     switch (c) {
       case 'a':
         CNV_ARG(NEST_SIZE, atoi);
@@ -255,6 +259,9 @@ void parse_args(int argc, char **argv) {
         break;
       case 'h':
         CNV_ARG(HEIGHT, atoi);
+        break;
+      case 'l':
+        LOOP = 1;
         break;
       case 'e':
         DISABLE_FALLEN = 0;
@@ -279,27 +286,9 @@ void parse_args(int argc, char **argv) {
   }
 }
 
-int main(int argc, char **argv) {
-  parse_args(argc, argv);
-  init_terminal();
-  //init
-  s_plane *plane = new_plane(WIDTH, HEIGHT);
-
-  if (SEED == 0) {
-    SEED = time(NULL);
-  }
-  srandom(SEED);
-  s_ant nest[NEST_SIZE];
-  int i;
-  for (i = 0; i != NEST_SIZE; i++) {
-    #define NBORDER (1.0-BORDER)
-    nest[i].x = (frandom()*WIDTH*NBORDER)+WIDTH*BORDER*.5;
-    nest[i].y = (frandom()*HEIGHT*NBORDER)+HEIGHT*BORDER*.5;
-    nest[i].angle = random() % 4;
-    nest[i].active = 1;
-  }
-
+void run_simulation(s_plane *plane, s_ant *nest) {
   //simulate
+  int i;
   int ant_fell = 0;
   int dead_ants = 0;
   unsigned long int steps_run = 0;
@@ -344,15 +333,55 @@ int main(int argc, char **argv) {
     }
     delay(DELAY);
   }
-  free(plane);
   cursor_to_end();
 
-  if (ant_fell) printf("\r\nAn ant has wandered off the map.\n");
-  if (dead_ants == NEST_SIZE) printf("\r\nAll the ants have fallen off the map.\n");
-  printf("Seed: %i\n", SEED);
-  printf("Size: %ix%i\n", WIDTH, HEIGHT);
-  printf("Nest size: %i\n", NEST_SIZE);
-  printf("Simulation time: %li steps\n", steps_run);
+  if (ant_fell) fprintf(stderr, "An ant has wandered off the map.\n");
+  if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
+  fprintf(stderr, "Seed: %i\n", SEED);
+  fprintf(stderr, "Size: %ix%i\n", WIDTH, HEIGHT);
+  fprintf(stderr, "Nest size: %i\n", NEST_SIZE);
+  fprintf(stderr, "Simulation time: %li steps\n", steps_run);
+  fprintf(stderr, "\n");
+
+}
+
+void setup_simulation(s_plane *plane, s_ant *nest) {
+  //initialize random
+  if (SEED == 0) {
+    srandom(time(NULL));
+  }
+  else {
+    srandom(SEED);
+  }
+
+  //place ants
+  int i;
+  for (i = 0; i != NEST_SIZE; i++) {
+    #define NBORDER (1.0-BORDER)
+    nest[i].x = (frandom()*WIDTH*NBORDER)+WIDTH*BORDER*.5;
+    nest[i].y = (frandom()*HEIGHT*NBORDER)+HEIGHT*BORDER*.5;
+    nest[i].angle = random() % 4;
+    nest[i].active = 1;
+  }
+
+  //reset infos
+  simulate = 1;
+}
+
+int main(int argc, char **argv) {
+  parse_args(argc, argv);
+  init_terminal();
+  //init
+  do {
+    s_plane *plane = new_plane(WIDTH, HEIGHT);
+    s_ant nest[NEST_SIZE];
+    setup_simulation(plane, nest);
+    run_simulation(plane, (s_ant*)&nest);
+    free(plane);
+    if (LOOP) {
+      clear_screen();
+    }
+  } while (LOOP);
   return 0;
 }
 
