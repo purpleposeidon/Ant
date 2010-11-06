@@ -12,40 +12,15 @@ int LOOP = 0;
 int JUMP = 0;
 int DRAW_MOD = 1;
 
-#define DRAW_DOTS 0
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <assert.h>
-#include <time.h>
-#include <sys/ioctl.h>
 
 
-#define SECS_USEC 1000000
+#include "ant.h"
+#include "draw.h"
+
 
 int simulate = 1;
-char *ant_symbol[] = {"↑", "↓", "→", "←"};
-char *arg0 = "ant"; //NULL;
+char *arg0 = "antsim";
 
-typedef struct {
-  unsigned int x, y;
-  enum {NORTH = 0, SOUTH, EAST, WEST} angle;
-  char active;
-} s_ant;
-
-typedef struct {
-  int width, height;
-  char *data;
-} s_plane;
-
-void delay(float time) {
-  useconds_t utime = time*SECS_USEC;
-  usleep(utime);
-}
 
 s_plane *new_plane(int width, int height) {
   s_plane *ret = malloc(sizeof(s_plane));
@@ -55,7 +30,7 @@ s_plane *new_plane(int width, int height) {
   return ret;
 }
 
-inline char *get_cell(s_plane *plane, int x, int y) {
+char *get_cell(s_plane *plane, int x, int y) {
   assert(x >= 0);
   assert(y >= 0);
   assert(x < plane->width);
@@ -63,81 +38,6 @@ inline char *get_cell(s_plane *plane, int x, int y) {
   return &plane->data[x+y*plane->width];
 }
 
-void cursor_set(int x, int y) {
-  assert(x >= 0);
-  assert(y >= 0);
-  printf("\x1b[%i;%iH", y, x);
-}
-
-void print_cell(char cell) {
-  if (cell) {
-    printf("\x1b[7m"); //reverse
-  }
-  #if DRAW_DOTS
-  printf(".");
-  #else
-  printf(" ");
-  #endif
-  if (cell) {
-    printf("\x1b[0m"); //normal
-  }
-}
-
-void draw_ant(s_ant *ant) {
-  cursor_set(1+ant->x, 1+ant->y);
-  printf("\x1b[31m"); //red
-  if (ant->active) {
-    printf("\x1b[1m"); //bold
-    printf("%s", ant_symbol[ant->angle]);
-  }
-  else {
-    printf("a");
-  }
-  printf("\x1b[0m"); //normal
-  printf("\n");
-}
-
-void clear_ant(s_plane *plane, s_ant *ant) {
-  int dx, dy;
-  int x = ant->x, y = ant->y;
-  for (dy = -1; dy < 2; dy++) {
-    for (dx = -1; dx < 2; dx++) {
-      //if (x && y) continue; //don't need diagonals
-      //if (!(!!x ^ !!y)) continue;
-      //if (x == 1 && y == 0) continue;
-      //if (!(x && y)) continue;
-      if (x == y && x == 1) continue;
-      if (!(
-        (y + dy >= 0 && x + dx >= 0) && (y + dy < plane->height && x + dx < plane->width)
-        )) continue;
-      if (dx == -1) {
-        cursor_set(1+x+dx, 1+y+dy);
-      }
-      char cell = *get_cell(plane, dx+x, dy+y);
-      print_cell(cell);
-    }
-  }
-  printf("\n");
-}
-
-void cursor_home() {
-  printf("\x1b[H"); //cursor home
-}
-
-void draw_plane(s_plane *plane) {
-  //this is horribly inefficient
-  //I don't care
-  //(Besides, it isn't used anymore)
-  cursor_home();
-  int x, y;
-  for (y = 0; y != plane->height; y++){
-    for (x = 0; x != plane->width; x++) {
-      char cell = *get_cell(plane, x, y);
-      print_cell(cell);
-    }
-    printf("\n"); //next line
-  }
-}
 
 
 void step(s_plane *plane, s_ant *ant) {
@@ -211,45 +111,7 @@ void step(s_plane *plane, s_ant *ant) {
   }
 }
 
-void cursor_to_end() {
-  cursor_set(1, HEIGHT);
-}
 
-void show_cursor() {
-  printf("\x1b[?25h"); //cursor show
-}
-
-void clear_screen() {
-  printf("\x1b[2J"); //clear screen
-}
-
-void set_size() {
-  struct winsize w;
-  ioctl(0, TIOCGWINSZ, &w);
-  WIDTH = w.ws_col - 2;
-  HEIGHT = w.ws_row - 2;
-}
-
-void handle_sig(int signum) {
-  if (simulate) {
-    simulate = 0;
-    LOOP = 0; //otherwise it loops forever
-  }
-  else {
-    //seriously!
-    exit(EXIT_FAILURE);
-  }
-}
-
-void init_terminal() {
-  //crap for nice output
-  setvbuf(stdin, (char *) NULL, _IONBF, 0); //printf flushes immediately
-  //XXX It's supposed to, anyways. It doesn't actually.
-  clear_screen();
-  printf("\x1b[?25l"); //cursor hide
-  atexit(show_cursor);
-  signal(SIGINT, handle_sig);
-}
 
 float frandom() {
   //returns a random float in [0.0, 1.0] probably
@@ -446,8 +308,9 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       "has lost the antidote!",
       "fears the anteater.",
       "thinks you smell funny.",
-      "is going to sit down and think up more ant puns."};
-      int action_length = 13; //this really isn't sustainable
+      "is going to sit down and think up more ant puns.",
+      "has wandered off the map."};
+      int action_length = 14; //this really isn't sustainable
       char *action = actions[(int)(action_length*frandom())];
       fprintf(stderr, "%s the %sAnt %s\n", name, title, action);
     }
@@ -456,6 +319,7 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     if (ant_fell) fprintf(stderr, "An ant has wandered off the map.\n");
     if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
   }
+  cursor_to_end();
   fprintf(stderr, "Seed: %i\n", SEED);
   fprintf(stderr, "Size: %ix%i\n", WIDTH, HEIGHT);
   fprintf(stderr, "Nest size: %i\n", NEST_SIZE);
@@ -464,8 +328,8 @@ void run_simulation(s_plane *plane, s_ant *nest) {
   if (!simulate) {
     fprintf(stderr, "Continue:\n%s -s %i -a %i -w %i -h %i -j %li\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT, steps_run);
   }
-  fprintf(stderr, "\n");
-  cursor_to_end();
+  fprintf(stderr, "\n\n");
+  
 }
 
 void setup_simulation(s_plane *plane, s_ant *nest) {
@@ -491,7 +355,7 @@ void setup_simulation(s_plane *plane, s_ant *nest) {
 
 int main(int argc, char **argv) {
   arg0 = argv[0];
-  set_size();
+  set_size(&WIDTH, &HEIGHT);
   parse_args(argc, argv);
   init_terminal();
   //init
