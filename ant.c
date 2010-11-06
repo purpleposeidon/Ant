@@ -75,8 +75,13 @@ void print_cell(char cell) {
 void draw_ant(s_ant *ant) {
   cursor_set(1+ant->x, 1+ant->y);
   printf("\x1b[31m"); //red
-  printf("\x1b[1m"); //bold
-  printf("%s", ant_symbol[ant->angle]);
+  if (ant->active) {
+    printf("\x1b[1m"); //bold
+    printf("%s", ant_symbol[ant->angle]);
+  }
+  else {
+    printf("a");
+  }
   printf("\x1b[0m"); //normal
   printf("\n");
 }
@@ -103,6 +108,7 @@ void clear_ant(s_plane *plane, s_ant *ant) {
 void draw_plane(s_plane *plane) {
   //this is horribly inefficient
   //I don't care
+  //(Besides, it isn't used anymore)
   printf("\x1b[H"); //cursor home
   int x, y;
   for (y = 0; y != plane->height; y++){
@@ -186,7 +192,7 @@ void step(s_plane *plane, s_ant *ant) {
 }
 
 void cursor_to_end() {
-  cursor_set(0, HEIGHT);
+  cursor_set(1, HEIGHT);
 }
 
 void show_cursor() {
@@ -312,7 +318,7 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     if (!simulate) break;
 
     for (i = 0; i != NEST_SIZE; i++) {
-      ACTIVE;
+      //ACTIVE;
       draw_ant(&nest[i]);
     }
     delay(DELAY);
