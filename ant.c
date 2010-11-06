@@ -1,8 +1,7 @@
 
 // Configuration
-#define DELAY .0005
-#define SECS_USEC 1000000
-#define BORDER .8
+float DELAY = .0005;
+float BORDER = .8;
 int WIDTH = 80; //TODO: Get terminal size
 int HEIGHT = 40; //NOTE: I never pay attention to TODO crap >_>
 int NEST_SIZE = 2;
@@ -20,6 +19,7 @@ int DISABLE_FALLEN = 1;
 #include <assert.h>
 #include <time.h>
 
+#define SECS_USEC 1000000
 
 int simulate = 1;
 char *ant_symbol[] = {"↑", "↓", "→", "←"};
@@ -211,16 +211,67 @@ float frandom() {
   return ((float)random()) / ((float)RAND_MAX);
 }
 
-#if 0
-int parse_args(int argc, char **argv) {
-  //using GNU arg parsing would be silly, of course.
+void parse_args(int argc, char **argv) {
   char usage[] =
   "Usage: \n" \
-  "\tant [-a ANTCOUNT] [-s SEED]\n";
-}
-#endif
-void parse_args(int argc, char **argv) {
+  "  ant [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-e] [-d DELAY] [-s SEED] [-b BORDER]\n" \
+  "-a   Sets how many ants to use\n" \
+  "-w   Sets the map width\n" \
+  "-h   Sets the map height\n" \
+  "-e   Ends the simulation if an ant touches the edge (default = no)\n" \
+  "-d   Delay, in seconds (default = .0005)\n" \
+  "-s   Sets the seed for ant placement (default = current time)\n" \
+  "-b   Sets the border for random ant placement (default = 0.8)\n" \
+  ;
+#define USE_FAIL do { \
+  fprintf(stderr, "%s\n", usage); \
+  exit(EXIT_FAILURE); } while (0)
+#define CNV_ARG(var, func) do { \
+  if (optarg) { \
+    var = func(optarg); \
+  } \
+  else { \
+    printf("-%c expected argument.\n", c); \
+    USE_FAIL; \
+  } \
+} while (0)
   opterr = 1;
+  char c;
+  while ((c = getopt (argc, argv, "a:w:h:ed:s:b:")) != -1) {
+    printf("Got arg.\n");
+    switch (c) {
+      case 'a':
+        CNV_ARG(NEST_SIZE, atoi);
+        break;
+      case 'w':
+        CNV_ARG(WIDTH, atoi);
+        break;
+      case 'h':
+        CNV_ARG(HEIGHT, atoi);
+        break;
+      case 'e':
+        DISABLE_FALLEN = 0;
+        break;
+      case 'd':
+        CNV_ARG(DELAY, atof);
+        break;
+      case 's':
+        CNV_ARG(SEED, atoi);
+        break;
+      case 'b':
+        CNV_ARG(BORDER, atof);
+        break;
+      case '?':
+        USE_FAIL;
+        abort();
+        break;
+      default:
+        abort();
+        break;
+    }
+    
+  }
+
 }
 
 int main(int argc, char **argv) {
