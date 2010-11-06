@@ -64,17 +64,18 @@ void cursor_set(int x, int y) {
 
 void print_cell(char cell) {
   if (cell) {
-    printf("\x1b[7m");
+    printf("\x1b[7m"); //reverse
   }
   printf(" ");
   if (cell) {
-    printf("\x1b[0m");
+    printf("\x1b[0m"); //normal
   }
 }
 
 void draw_ant(s_ant *ant) {
   cursor_set(1+ant->x, 1+ant->y);
   printf("\x1b[31m"); //red
+  printf("\x1b[1m"); //bold
   printf("%s", ant_symbol[ant->angle]);
   printf("\x1b[0m"); //normal
   printf("\n");
@@ -269,9 +270,7 @@ void parse_args(int argc, char **argv) {
         abort();
         break;
     }
-    
   }
-
 }
 
 int main(int argc, char **argv) {
