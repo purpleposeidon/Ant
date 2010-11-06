@@ -1,0 +1,4 @@
+See http://en.wikipedia.org/wiki/Langton's_ant .
+gcc and make should be enough to compile it.
+
+See antsim -?
