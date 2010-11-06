@@ -9,7 +9,10 @@ int SEED = 0;
 int USE_TIME = 1;
 int DISABLE_FALLEN = 1;
 int LOOP = 0;
+int JUMP = 0;
+int DRAW_MOD = 1;
 
+#define DRAW_DOTS 0
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,6 +29,7 @@ int LOOP = 0;
 
 int simulate = 1;
 char *ant_symbol[] = {"↑", "↓", "→", "←"};
+char *arg0 = "ant"; //NULL;
 
 typedef struct {
   unsigned int x, y;
@@ -69,7 +73,11 @@ void print_cell(char cell) {
   if (cell) {
     printf("\x1b[7m"); //reverse
   }
+  #if DRAW_DOTS
+  printf(".");
+  #else
   printf(" ");
+  #endif
   if (cell) {
     printf("\x1b[0m"); //normal
   }
@@ -94,6 +102,11 @@ void clear_ant(s_plane *plane, s_ant *ant) {
   int x = ant->x, y = ant->y;
   for (dy = -1; dy < 2; dy++) {
     for (dx = -1; dx < 2; dx++) {
+      //if (x && y) continue; //don't need diagonals
+      //if (!(!!x ^ !!y)) continue;
+      //if (x == 1 && y == 0) continue;
+      //if (!(x && y)) continue;
+      if (x == y && x == 1) continue;
       if (!(
         (y + dy >= 0 && x + dx >= 0) && (y + dy < plane->height && x + dx < plane->width)
         )) continue;
@@ -107,16 +120,20 @@ void clear_ant(s_plane *plane, s_ant *ant) {
   printf("\n");
 }
 
+void cursor_home() {
+  printf("\x1b[H"); //cursor home
+}
 
 void draw_plane(s_plane *plane) {
   //this is horribly inefficient
   //I don't care
   //(Besides, it isn't used anymore)
-  printf("\x1b[H"); //cursor home
+  cursor_home();
   int x, y;
   for (y = 0; y != plane->height; y++){
     for (x = 0; x != plane->width; x++) {
-      print_cell(*get_cell(plane, x, y));
+      char cell = *get_cell(plane, x, y);
+      print_cell(cell);
     }
     printf("\n"); //next line
   }
@@ -242,15 +259,20 @@ float frandom() {
 void parse_args(int argc, char **argv) {
   char usage[] =
   "Usage: \n" \
-  "  ant [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-s SEED] [-b BORDER]\n" \
-  "-a   Sets how many ants to use\n" \
-  "-w   Sets the map width\n" \
-  "-h   Sets the map height\n" \
-  "-l   Loop the simulation\n" \
-  "-e   Ends the simulation if an ant touches the edge (default = no)\n" \
-  "-d   Delay, in seconds (default = .0005)\n" \
-  "-s   Sets the seed for ant placement (default = current time)\n" \
-  "-b   Sets the border for random ant placement (default = 0.8)\n" \
+  "  ant [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-j JUMP] [-m SKIP] [-s SEED] [-b BORDER]\n" \
+  "\n" \
+  "-a   Sets how many ants to use.\n" \
+  "-w   Sets the map width.\n" \
+  "-h   Sets the map height.\n" \
+  "-l   Loop the simulation. If -s is not given, a different seed will be used each time.\n" \
+  "-e   Ends the simulation if an ant touches the edge. (default = ends if all ants have left)\n" \
+  "-d   Delay, in seconds. (default = .0005)\n" \
+  "-j   Don't draw the first JUMP frames.\n" \
+  "-m   Sets how many frames are drawn. Setting to low values will not speed up the simulation.\n"
+  "     If 0, no frames are drawn. (Except for the last one.) If 1, all frames are drawn, and they\n"
+  "     are drawn efficiently. Otherwise, the entire grid is redrawn every SKIP frames.\n" \
+  "-s   Sets the seed for ant placement. (default = current time)\n" \
+  "-b   Sets the border for random ant placement. (default = 0.8)\n" \
   ;
 
 #define USE_FAIL do { \
@@ -267,9 +289,9 @@ void parse_args(int argc, char **argv) {
   } \
 } while (0)
 
-  opterr = 1;
+  opterr = 0;
   char c;
-  while ((c = getopt (argc, argv, "a:w:h:led:s:b:")) != -1) {
+  while ((c = getopt (argc, argv, "a:w:h:led:j:m:s:b:")) != -1) {
     switch (c) {
       case 'a':
         CNV_ARG(NEST_SIZE, atoi);
@@ -288,6 +310,12 @@ void parse_args(int argc, char **argv) {
         break;
       case 'd':
         CNV_ARG(DELAY, atof);
+        break;
+      case 'j':
+        CNV_ARG(JUMP, atoi);
+        break;
+      case 'm':
+        CNV_ARG(DRAW_MOD, atoi);
         break;
       case 's':
         CNV_ARG(SEED, atoi);
@@ -313,6 +341,7 @@ void run_simulation(s_plane *plane, s_ant *nest) {
   int ant_fell = 0;
   int dead_ants = 0;
   unsigned long int steps_run = 0;
+  int need_full_redraw = 0;
   while (simulate && dead_ants != NEST_SIZE) {
     #define ACTIVE if (!nest[i].active) continue
     //check ant bounding
@@ -331,12 +360,27 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       }
     }
     if (!simulate) break;
-
-    for (i = 0; i != NEST_SIZE; i++) {
-      //ACTIVE;
-      draw_ant(&nest[i]);
+    int do_draw;
+    if (DRAW_MOD) {
+      do_draw = steps_run >= JUMP && !(steps_run % DRAW_MOD);
     }
-    delay(DELAY);
+    else {
+      do_draw = 0;
+    }
+    if (!do_draw) need_full_redraw = 1;
+
+    if (do_draw) {
+      if (need_full_redraw) {
+        //who knows what they've been up to...
+        draw_plane(plane);
+        need_full_redraw = 0;
+      }
+      for (i = 0; i != NEST_SIZE; i++) {
+        //ACTIVE;
+        draw_ant(&nest[i]);
+      }
+      delay(DELAY);
+    }
 
     for (i = 0; i != NEST_SIZE; i++) {
       ACTIVE;
@@ -344,19 +388,29 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     }
     steps_run++;
 
-    for (i = 0; i != NEST_SIZE; i++) {
-      ACTIVE;
-      clear_ant(plane, &nest[i]);
+    if (do_draw) {
+      for (i = 0; i != NEST_SIZE; i++) {
+        ACTIVE;
+        clear_ant(plane, &nest[i]);
+      }
+      for (i = 0; i != NEST_SIZE; i++) {
+        ACTIVE;
+        draw_ant(&nest[i]);
+      }
+      delay(DELAY);
     }
+  }
+  if (need_full_redraw) {
+    //draw the last frame
+    draw_plane(plane);
+    need_full_redraw = 0;
     for (i = 0; i != NEST_SIZE; i++) {
-      ACTIVE;
+      //ACTIVE;
       draw_ant(&nest[i]);
     }
-    delay(DELAY);
   }
-  printf("calling cursor_to_end();xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-  cursor_to_end();
-
+  //printf("calling cursor_to_end();xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+  cursor_home();
   if (1 == NEST_SIZE && dead_ants == 1) {
     //only one ant, and it abandoned you
     if (frandom() > .95) {
@@ -388,8 +442,8 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       "has fallen off a cliff!",
       "is going back to Hex.",
       "is going on an antventure.",
-      "has an interesting antecdotes to share.",
-      "has misplaced the antidote.",
+      "is leaving to share some fascinating antecdotes.",
+      "has lost the antidote!",
       "fears the anteater.",
       "thinks you smell funny.",
       "is going to sit down and think up more ant puns."};
@@ -406,7 +460,12 @@ void run_simulation(s_plane *plane, s_ant *nest) {
   fprintf(stderr, "Size: %ix%i\n", WIDTH, HEIGHT);
   fprintf(stderr, "Nest size: %i\n", NEST_SIZE);
   fprintf(stderr, "Simulation time: %li steps\n", steps_run);
+  fprintf(stderr, "Re-play:\n%s -s %i -a %i -w %i -h %i\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT);
+  if (!simulate) {
+    fprintf(stderr, "Continue:\n%s -s %i -a %i -w %i -h %i -j %li\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT, steps_run);
+  }
   fprintf(stderr, "\n");
+  cursor_to_end();
 }
 
 void setup_simulation(s_plane *plane, s_ant *nest) {
@@ -431,6 +490,7 @@ void setup_simulation(s_plane *plane, s_ant *nest) {
 }
 
 int main(int argc, char **argv) {
+  arg0 = argv[0];
   set_size();
   parse_args(argc, argv);
   init_terminal();
@@ -450,6 +510,9 @@ int main(int argc, char **argv) {
 
 //Some amusing seeds
 /*
+Makes a baseball diamond
+$ ./run -s 1289035251 -w 127 -h 41
+
 Seed: 1289030354                                       
 Size: 80x40                                              
 Nest size: 2                                             
