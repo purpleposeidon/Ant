@@ -271,8 +271,8 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       draw_ant(&nest[i]);
     }
   }
-  //printf("calling cursor_to_end();xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
   cursor_home();
+  printf("\rStats:\n\t");
   if (1 == NEST_SIZE && dead_ants == 1) {
     //only one ant, and it abandoned you
     if (frandom() > .95) {
@@ -320,14 +320,15 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
   }
   cursor_to_end();
-  fprintf(stderr, "Seed: %i\n", SEED);
-  fprintf(stderr, "Size: %ix%i\n", WIDTH, HEIGHT);
-  fprintf(stderr, "Nest size: %i\n", NEST_SIZE);
-  fprintf(stderr, "Simulation time: %li steps\n", steps_run);
-  fprintf(stderr, "Re-play:\n%s -s %i -a %i -w %i -h %i\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT);
+  fprintf(stderr, "\tSeed: %i\n", SEED);
+  fprintf(stderr, "\tSize: %ix%i\n", WIDTH, HEIGHT);
+  fprintf(stderr, "\tNest size: %i\n", NEST_SIZE);
+  fprintf(stderr, "\tSimulation time: %li steps\n\n", steps_run);
+  fprintf(stderr, "Re-run simulation:\n\t%s -s %i -a %i -w %i -h %i\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT);
   if (!simulate) {
-    fprintf(stderr, "Continue:\n%s -s %i -a %i -w %i -h %i -j %li\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT, steps_run);
+    fprintf(stderr, "\nPseudo-continue simulation:\n\t%s -s %i -a %i -w %i -h %i -j %li\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT, steps_run);
   }
+  cursor_to_end();
   fprintf(stderr, "\n\n");
   
 }
