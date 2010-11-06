@@ -18,6 +18,7 @@ int DISABLE_FALLEN = 1;
 #include <errno.h>
 #include <sys/types.h>
 #include <assert.h>
+#include <time.h>
 
 
 int simulate = 1;
@@ -44,6 +45,7 @@ s_plane *new_plane(int width, int height) {
   ret->width = width;
   ret->height = height;
   ret->data = calloc(sizeof(char), width*height);
+  return ret;
 }
 
 inline char *get_cell(s_plane *plane, int x, int y) {
@@ -121,7 +123,7 @@ void step(s_plane *plane, s_ant *ant) {
   char *here = get_cell(plane, ant->x, ant->y);
   //turn
   if (*here) {
-    //white; right
+    //White on right. Queen on color.
     switch (ant->angle) {
       case NORTH:
         ant->angle = EAST;
@@ -198,6 +200,7 @@ void handle_sig(int signum) {
 void init_terminal() {
   //crap for nice output
   setvbuf(stdin, (char *) NULL, _IONBF, 0); //printf flushes immediately
+  //XXX It's supposed to, anyways. It doesn't actually.
   printf("\x1b[2J"); //clear screen
   printf("\x1b[?25l"); //cursor hide
   atexit(show_cursor);
@@ -208,13 +211,26 @@ float frandom() {
   return ((float)random()) / ((float)RAND_MAX);
 }
 
-int main() {
+#if 0
+int parse_args(int argc, char **argv) {
+  //using GNU arg parsing would be silly, of course.
+  char usage[] =
+  "Usage: \n" \
+  "\tant [-a ANTCOUNT] [-s SEED]\n";
+}
+#endif
+void parse_args(int argc, char **argv) {
+  opterr = 1;
+}
+
+int main(int argc, char **argv) {
+  parse_args(argc, argv);
   init_terminal();
   //init
   s_plane *plane = new_plane(WIDTH, HEIGHT);
 
   if (SEED == 0) {
-    SEED = time();
+    SEED = time(NULL);
   }
   srandom(SEED);
   s_ant nest[NEST_SIZE];
