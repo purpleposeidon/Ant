@@ -72,7 +72,9 @@ void print_cell(char cell) {
 
 void draw_ant(s_ant *ant) {
   cursor_set(1+ant->x, 1+ant->y);
+  printf("\x1b[31m"); //red
   printf("%s", ant_symbol[ant->angle]);
+  printf("\x1b[0m"); //normal
   printf("\n");
 }
 
