@@ -4,7 +4,7 @@
 #define SECS_USEC 1000000
 #define BORDER .8
 int WIDTH = 280; //TODO: Get terminal size
-int HEIGHT = 90;
+int HEIGHT = 90; //NOTE: I never pay attention to TODO crap >_>
 int NEST_SIZE = 10;
 int SEED = 0;
 
@@ -190,9 +190,6 @@ void show_cursor() {
 
 void handle_sig(int signum) {
   simulate = 0;
-  /*exit(EXIT_SUCCESS);
-  cursor_to_end(); //don't want the shell prompt in the middle of the grid
-  */
 }
 
 void init_terminal() {
