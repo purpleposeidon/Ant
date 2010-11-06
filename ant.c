@@ -231,19 +231,6 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     }
     if (!do_draw) need_full_redraw = 1;
 
-    if (do_draw) {
-      if (need_full_redraw) {
-        //who knows what they've been up to...
-        draw_plane(plane);
-        need_full_redraw = 0;
-      }
-      for (i = 0; i != NEST_SIZE; i++) {
-        //ACTIVE;
-        draw_ant(&nest[i]);
-      }
-      delay(DELAY);
-    }
-
     for (i = 0; i != NEST_SIZE; i++) {
       ACTIVE;
       step(plane, &nest[i]);
@@ -251,6 +238,11 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     steps_run++;
 
     if (do_draw) {
+      if (need_full_redraw) {
+        //who knows what they've been up to...
+        draw_plane(plane);
+        need_full_redraw = 0;
+      }
       for (i = 0; i != NEST_SIZE; i++) {
         ACTIVE;
         clear_ant(plane, &nest[i]);
@@ -372,32 +364,3 @@ int main(int argc, char **argv) {
   } while (LOOP);
   return 0;
 }
-
-//Some amusing seeds
-/*
-Makes a baseball diamond
-$ ./run -s 1289035251 -w 127 -h 41
-
-Seed: 1289030354                                       
-Size: 80x40                                              
-Nest size: 2                                             
-Simulation time: 1381 steps 
-
-**THESE SEEDS ARE FROM THE FIRST COMMIT**
-(no way to input seeds ATM)
-Possibly stable pulsar:
-Seed: 1289021114
-Size: 280x90
-Nest size: 2
-
-Hella cool:
-Seed: 1289021504
-Size: 280x90
-Nest size: 2
-
-Incredible behavior:
-Seed: 1289021560
-Size: 280x90
-Nest size: 2
-
-*/

@@ -1,0 +1,8 @@
+Makes a baseball diamond
+  ./run -s 1289035251 -w 127 -h 41
+
+Small looping growing/shrinking pattern
+  ./run -s 1289038530 -a 2 -w 127 -h 43
+
+The original ant
+  ./run -a 1  -b 1
