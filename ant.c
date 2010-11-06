@@ -195,7 +195,13 @@ void show_cursor() {
 
 
 void handle_sig(int signum) {
-  simulate = 0;
+  if (simulate) {
+    simulate = 0;
+  }
+  else {
+    //seriously!
+    exit(EXIT_FAILURE);
+  }
 }
 
 void init_terminal() {
