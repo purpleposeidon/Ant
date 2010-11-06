@@ -228,6 +228,7 @@ int main() {
   //simulate
   int ant_fell = 0;
   int dead_ants = 0;
+  unsigned long int steps_run = 0;
   while (simulate && dead_ants != NEST_SIZE) {
     #define ACTIVE if (!nest[i].active) continue
     //check ant bounding
@@ -257,6 +258,8 @@ int main() {
       ACTIVE;
       step(plane, &nest[i]);
     }
+    steps_run++;
+
     for (i = 0; i != NEST_SIZE; i++) {
       ACTIVE;
       clear_ant(plane, &nest[i]);
@@ -275,6 +278,7 @@ int main() {
   printf("Seed: %i\n", SEED);
   printf("Size: %ix%i\n", WIDTH, HEIGHT);
   printf("Nest size: %i\n", NEST_SIZE);
+  printf("Simulation time: %li steps\n", steps_run);
   return 0;
 }
 
