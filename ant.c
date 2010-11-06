@@ -2,8 +2,8 @@
 // Configuration
 float DELAY = .0005;
 float BORDER = .8;
-int WIDTH = 80; //TODO: Get terminal size
-int HEIGHT = 40; //NOTE: I never pay attention to TODO crap >_>
+int WIDTH = 80;
+int HEIGHT = 40;
 int NEST_SIZE = 2;
 int SEED = 0;
 int USE_TIME = 1;
@@ -19,6 +19,8 @@ int LOOP = 0;
 #include <sys/types.h>
 #include <assert.h>
 #include <time.h>
+#include <sys/ioctl.h>
+
 
 #define SECS_USEC 1000000
 
@@ -204,6 +206,13 @@ void clear_screen() {
   printf("\x1b[2J"); //clear screen
 }
 
+void set_size() {
+  struct winsize w;
+  ioctl(0, TIOCGWINSZ, &w);
+  WIDTH = w.ws_col - 2;
+  HEIGHT = w.ws_row - 2;
+}
+
 void handle_sig(int signum) {
   if (simulate) {
     simulate = 0;
@@ -243,9 +252,11 @@ void parse_args(int argc, char **argv) {
   "-s   Sets the seed for ant placement (default = current time)\n" \
   "-b   Sets the border for random ant placement (default = 0.8)\n" \
   ;
+
 #define USE_FAIL do { \
   fprintf(stderr, "%s\n", usage); \
   exit(EXIT_FAILURE); } while (0)
+
 #define CNV_ARG(var, func) do { \
   if (optarg) { \
     var = func(optarg); \
@@ -255,6 +266,7 @@ void parse_args(int argc, char **argv) {
     USE_FAIL; \
   } \
 } while (0)
+
   opterr = 1;
   char c;
   while ((c = getopt (argc, argv, "a:w:h:led:s:b:")) != -1) {
@@ -286,10 +298,10 @@ void parse_args(int argc, char **argv) {
         break;
       case '?':
         USE_FAIL;
-        abort();
+        exit(EXIT_FAILURE);
         break;
       default:
-        abort();
+        exit(EXIT_FAILURE);
         break;
     }
   }
@@ -342,14 +354,16 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     }
     delay(DELAY);
   }
+  printf("calling cursor_to_end();xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
   cursor_to_end();
 
   if (1 == NEST_SIZE && dead_ants == 1) {
+    //only one ant, and it abandoned you
     if (frandom() > .95) {
       fprintf(stderr, "The soldier ant bites! You die...\n");
     }
     else {
-      char *names[] = {"Alice", "Albert", "Alyssa", "Alex", "Al"};
+      char *names[] = {"Alice", "Albert", "Alyssa", "Alex", "Al", "Lantgon"};
       int names_len = 5;
       char *name = names[(int)(names_len*frandom())];
       char *title;
@@ -374,10 +388,12 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       "has fallen off a cliff!",
       "is going back to Hex.",
       "is going on an antventure.",
-      "has an interesting antecdotes to share with ver friends.",
+      "has an interesting antecdotes to share.",
       "has misplaced the antidote.",
-      "fears the anteater."};
-      int action_length = 11; //this really isn't sustainable
+      "fears the anteater.",
+      "thinks you smell funny.",
+      "is going to sit down and think up more ant puns."};
+      int action_length = 13; //this really isn't sustainable
       char *action = actions[(int)(action_length*frandom())];
       fprintf(stderr, "%s the %sAnt %s\n", name, title, action);
     }
@@ -391,7 +407,6 @@ void run_simulation(s_plane *plane, s_ant *nest) {
   fprintf(stderr, "Nest size: %i\n", NEST_SIZE);
   fprintf(stderr, "Simulation time: %li steps\n", steps_run);
   fprintf(stderr, "\n");
-
 }
 
 void setup_simulation(s_plane *plane, s_ant *nest) {
@@ -416,6 +431,7 @@ void setup_simulation(s_plane *plane, s_ant *nest) {
 }
 
 int main(int argc, char **argv) {
+  set_size();
   parse_args(argc, argv);
   init_terminal();
   //init
@@ -432,7 +448,13 @@ int main(int argc, char **argv) {
   return 0;
 }
 
+//Some amusing seeds
 /*
+Seed: 1289030354                                       
+Size: 80x40                                              
+Nest size: 2                                             
+Simulation time: 1381 steps 
+
 **THESE SEEDS ARE FROM THE FIRST COMMIT**
 (no way to input seeds ATM)
 Possibly stable pulsar:
