@@ -3,3 +3,10 @@
 * Check NOTE?
 * add a skip option
 * moar files
+* file loading would be nice
+* some kind of hash to check for repeats?
+
+kitchen sink
+* add "limit frames". Or just use ulimit
+* Add "quiet". Or just redirect stderr
+
