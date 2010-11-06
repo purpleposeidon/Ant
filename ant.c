@@ -3,9 +3,9 @@
 #define DELAY .0005
 #define SECS_USEC 1000000
 #define BORDER .8
-int WIDTH = 280; //TODO: Get terminal size
-int HEIGHT = 90; //NOTE: I never pay attention to TODO crap >_>
-int NEST_SIZE = 10;
+int WIDTH = 80; //TODO: Get terminal size
+int HEIGHT = 40; //NOTE: I never pay attention to TODO crap >_>
+int NEST_SIZE = 2;
 int SEED = 0;
 int DISABLE_FALLEN = 1;
 
