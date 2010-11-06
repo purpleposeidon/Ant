@@ -1,3 +1,16 @@
+
+// Configuration
+#define DELAY .0005
+#define SECS_USEC 1000000
+#define BORDER .8
+int WIDTH = 280; //TODO: Get terminal size
+int HEIGHT = 90;
+int NEST_SIZE = 10;
+int SEED = 0;
+
+
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -6,11 +19,6 @@
 #include <sys/types.h>
 #include <assert.h>
 
-#define DELAY .0005
-#define SECS_USEC 1000000
-#define BORDER .5
-int WIDTH = 280;
-int HEIGHT = 90;
 
 int simulate = 1;
 char *ant_symbol[] = {"↑", "↓", "→", "←"};
@@ -205,8 +213,6 @@ int main() {
   //init
   s_plane *plane = new_plane(WIDTH, HEIGHT);
 
-  int NEST_SIZE = 2;
-  int SEED = 0;
   if (SEED == 0) {
     SEED = time();
   }
@@ -215,8 +221,8 @@ int main() {
   int i;
   for (i = 0; i != NEST_SIZE; i++) {
     #define NBORDER (1.0-BORDER)
-    nest[i].x = (frandom()*WIDTH*NBORDER)+WIDTH*BORDER;
-    nest[i].y = (frandom()*HEIGHT*NBORDER)+HEIGHT*BORDER;
+    nest[i].x = (frandom()*WIDTH*NBORDER)+WIDTH*BORDER*.5;
+    nest[i].y = (frandom()*HEIGHT*NBORDER)+HEIGHT*BORDER*.5;
     nest[i].angle = random() % 4;
   }
 
