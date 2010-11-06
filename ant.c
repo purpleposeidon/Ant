@@ -6,6 +6,7 @@ int WIDTH = 80; //TODO: Get terminal size
 int HEIGHT = 40; //NOTE: I never pay attention to TODO crap >_>
 int NEST_SIZE = 2;
 int SEED = 0;
+int USE_TIME = 1;
 int DISABLE_FALLEN = 1;
 int LOOP = 0;
 
@@ -225,6 +226,7 @@ void init_terminal() {
 }
 
 float frandom() {
+  //returns a random float in [0.0, 1.0] probably
   return ((float)random()) / ((float)RAND_MAX);
 }
 
@@ -277,6 +279,7 @@ void parse_args(int argc, char **argv) {
         break;
       case 's':
         CNV_ARG(SEED, atoi);
+        USE_TIME = 0;
         break;
       case 'b':
         CNV_ARG(BORDER, atof);
@@ -341,8 +344,48 @@ void run_simulation(s_plane *plane, s_ant *nest) {
   }
   cursor_to_end();
 
-  if (ant_fell) fprintf(stderr, "An ant has wandered off the map.\n");
-  if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
+  if (1 == NEST_SIZE && dead_ants == 1) {
+    if (frandom() > .95) {
+      fprintf(stderr, "The soldier ant bites! You die...\n");
+    }
+    else {
+      char *names[] = {"Alice", "Albert", "Alyssa", "Alex", "Al"};
+      int names_len = 5;
+      char *name = names[(int)(names_len*frandom())];
+      char *title;
+      if (steps_run > 9000) {
+        title = "Amazing ";
+      }
+      else if (steps_run > 100000) {
+        title = "Awesome ";
+      }
+      else if (steps_run == 69) {
+        title = "Awkward ";
+      }
+      else {
+        title = "";
+      }
+      char *actions[] = {"has moved on to greener pastures.",
+      "has given up on you.",
+      "has decided to take a vacation.",
+      "dislikes your face.",
+      "is sick and tired of your carp.",
+      "has fallen off the terminal.",
+      "has fallen off a cliff!",
+      "is going back to Hex.",
+      "is going on an antventure.",
+      "has an interesting antecdotes to share with ver friends.",
+      "has misplaced the antidote.",
+      "fears the anteater."};
+      int action_length = 11; //this really isn't sustainable
+      char *action = actions[(int)(action_length*frandom())];
+      fprintf(stderr, "%s the %sAnt %s\n", name, title, action);
+    }
+  }
+  else {
+    if (ant_fell) fprintf(stderr, "An ant has wandered off the map.\n");
+    if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
+  }
   fprintf(stderr, "Seed: %i\n", SEED);
   fprintf(stderr, "Size: %ix%i\n", WIDTH, HEIGHT);
   fprintf(stderr, "Nest size: %i\n", NEST_SIZE);
@@ -353,12 +396,10 @@ void run_simulation(s_plane *plane, s_ant *nest) {
 
 void setup_simulation(s_plane *plane, s_ant *nest) {
   //initialize random
-  if (SEED == 0) {
-    srandom(time(NULL));
+  if (USE_TIME) {
+    SEED = time(NULL);
   }
-  else {
-    srandom(SEED);
-  }
+  srandom(SEED);
 
   //place ants
   int i;
