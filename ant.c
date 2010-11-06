@@ -7,7 +7,7 @@ int WIDTH = 280; //TODO: Get terminal size
 int HEIGHT = 90; //NOTE: I never pay attention to TODO crap >_>
 int NEST_SIZE = 10;
 int SEED = 0;
-
+int DISABLE_FALLEN = 1;
 
 
 
@@ -26,6 +26,7 @@ char *ant_symbol[] = {"↑", "↓", "→", "←"};
 typedef struct {
   unsigned int x, y;
   enum {NORTH = 0, SOUTH, EAST, WEST} angle;
+  char active;
 } s_ant;
 
 typedef struct {
@@ -221,33 +222,47 @@ int main() {
     nest[i].x = (frandom()*WIDTH*NBORDER)+WIDTH*BORDER*.5;
     nest[i].y = (frandom()*HEIGHT*NBORDER)+HEIGHT*BORDER*.5;
     nest[i].angle = random() % 4;
+    nest[i].active = 1;
   }
 
   //simulate
   int ant_fell = 0;
-  while (simulate) {
+  int dead_ants = 0;
+  while (simulate && dead_ants != NEST_SIZE) {
+    #define ACTIVE if (!nest[i].active) continue
     //check ant bounding
     for (i = 0; i != NEST_SIZE; i++) {
+      ACTIVE;
       s_ant ant = nest[i];
       if (!((ant.x && ant.y) && ((ant.x < plane->width) && (ant.y < plane->height)))) {
-        simulate = 0;
-        ant_fell = 1;
+        if (DISABLE_FALLEN) {
+          nest[i].active = 0;
+          dead_ants++;
+        }
+        else {
+          simulate = 0;
+          ant_fell = 1;
+        }
       }
     }
     if (!simulate) break;
 
     for (i = 0; i != NEST_SIZE; i++) {
+      ACTIVE;
       draw_ant(&nest[i]);
     }
     delay(DELAY);
 
     for (i = 0; i != NEST_SIZE; i++) {
+      ACTIVE;
       step(plane, &nest[i]);
     }
     for (i = 0; i != NEST_SIZE; i++) {
+      ACTIVE;
       clear_ant(plane, &nest[i]);
     }
     for (i = 0; i != NEST_SIZE; i++) {
+      ACTIVE;
       draw_ant(&nest[i]);
     }
     delay(DELAY);
@@ -256,6 +271,7 @@ int main() {
   cursor_to_end();
 
   if (ant_fell) printf("\r\nAn ant has wandered off the map.\n");
+  if (dead_ants == NEST_SIZE) printf("\r\nAll the ants have fallen off the map.\n");
   printf("Seed: %i\n", SEED);
   printf("Size: %ix%i\n", WIDTH, HEIGHT);
   printf("Nest size: %i\n", NEST_SIZE);
