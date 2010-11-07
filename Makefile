@@ -1,11 +1,12 @@
 
-CFLAGS = -Wall
+CFLAGS = -Wall -g
+CC = gcc
 
 all: ant.o draw.o
-	cc $(CFLAGS) -o antsim draw.o ant.o
+	$(CC) $(CFLAGS) -o antsim draw.o ant.o
 
 %.o: %.c
-	cc $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 clean:
 	rm -f *.o antsim *~
