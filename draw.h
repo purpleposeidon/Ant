@@ -23,5 +23,5 @@ void clear_ant(s_plane *plane, s_ant *ant);
 
 
 
-
 #endif /* DRAW_H */
+

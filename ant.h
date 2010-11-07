@@ -15,7 +15,10 @@
 #include <time.h>
 #include <sys/ioctl.h>
 
+#define MAX_INSTRUCTIONS 10
 #define SECS_USEC 1000000
+#define DEFAULT_COLOR 0
+
 int simulate;
 int LOOP;
 

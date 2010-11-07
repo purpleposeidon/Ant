@@ -3,7 +3,25 @@
 #include "ant.h"
 
 char *ant_symbol[] = {"↑", "↓", "→", "←"};
+#define QUOTE_(x) #x
+#define QUOTE(x) QUOTE_(x)
+#define ATTR(x) "\x1b[" QUOTE(x) "m"
+char *color2escape[MAX_INSTRUCTIONS] = {
+  ATTR(30) "#",
+  ATTR(37) ATTR(47) ".",
+  ATTR(31) ATTR(41) "R",
+  ATTR(32) ATTR(42) "G",
+  ATTR(33) ATTR(43) "O",
+  ATTR(34) ATTR(44) "b",
+  ATTR(35) ATTR(45) "M",
+  ATTR(36) ATTR(46) "t",
+  
+};
 
+/*
+char color2escape[MAX_COLORS] = {37,    30,    32,    34,   31,  36,   35,     33};
+char colors[] = {WHITE, BLACK, RED, GREEN, BROWN, BLUE, PURPLE, CYAN, '\0'}; //'WHITE' is actually gray.
+*/
 
 
 void show_cursor() {
@@ -26,6 +44,10 @@ void cursor_set(int x, int y) {
 
 void cursor_home() {
   printf("\x1b[H"); //cursor home
+}
+
+void normal() {
+  printf("\x1b[0m"); //normal
 }
 
 //////////////////////////////////////
@@ -73,16 +95,13 @@ void delay(float time) {
 //////////////////////////////////////
 
 void print_cell(char cell) {
-  if (cell) {
-    printf("\x1b[7m"); //reverse
+  char *esc = color2escape[(int)cell];
+  if (esc == NULL) {
+    printf("%c", cell+32);
   }
-  #if DRAW_DOTS
-  printf(".");
-  #else
-  printf(" ");
-  #endif
-  if (cell) {
-    printf("\x1b[0m"); //normal
+  else {
+    printf("%s", esc);
+    normal();
   }
 }
 
@@ -101,6 +120,7 @@ void draw_plane(s_plane *plane) {
 
 void draw_ant(s_ant *ant) {
   cursor_set(1+ant->x, 1+ant->y);
+  normal();
   printf("\x1b[31m"); //red
   if (ant->active) {
     printf("\x1b[1m"); //bold
@@ -109,7 +129,7 @@ void draw_ant(s_ant *ant) {
   else {
     printf("a");
   }
-  printf("\x1b[0m"); //normal
+  normal();
   printf("\n");
 }
 
@@ -120,11 +140,11 @@ void clear_ant(s_plane *plane, s_ant *ant) {
   for (dy = -1; dy < 2; dy++) {
     for (dx = -1; dx < 2; dx++) {
       //XXX This is weird. Uhhhhh
-      //if (x && y) continue; //don't need diagonals
-      //if (!(!!x ^ !!y)) continue;
-      //if (x == 1 && y == 0) continue;
-      //if (!(x && y)) continue;
-      if (x == y && x == 1) continue;
+      /*if (!(dx ^ dy )) {
+        //don't need diagonals
+        continue;
+      }*/
+      
       if (!(
         (y + dy >= 0 && x + dx >= 0) && (y + dy < plane->height && x + dx < plane->width)
         )) continue;

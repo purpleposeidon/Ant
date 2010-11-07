@@ -11,22 +11,27 @@ int DISABLE_FALLEN = 1;
 int LOOP = 0;
 int JUMP = 0;
 int DRAW_MOD = 1;
+int COLOR_COUNT = 2;
 
-
-
+#include <string.h>
+#include <ctype.h>
 #include "ant.h"
 #include "draw.h"
 
+char MOTION[MAX_INSTRUCTIONS+1]; //LR
 
 int simulate = 1;
 char *arg0 = "antsim";
+
+
 
 
 s_plane *new_plane(int width, int height) {
   s_plane *ret = malloc(sizeof(s_plane));
   ret->width = width;
   ret->height = height;
-  ret->data = calloc(sizeof(char), width*height);
+  ret->data = malloc(sizeof(char)*width*height);
+  memset(ret->data, DEFAULT_COLOR, width*height);
   return ret;
 }
 
@@ -38,77 +43,85 @@ char *get_cell(s_plane *plane, int x, int y) {
   return &plane->data[x+y*plane->width];
 }
 
+#define BAD_DIR do { fprintf(stderr, "Unknown direction."); exit(EXIT_FAILURE); } while (0)
+
+int right(int angle) {
+  switch (angle) {
+    case NORTH: return EAST;
+    case EAST: return SOUTH;
+    case SOUTH: return WEST;
+    case WEST: return NORTH;
+    default:
+      BAD_DIR;
+  }
+}
+
+int left(int angle) {
+  switch (angle) {
+    case NORTH: return WEST;
+    case EAST: return NORTH;
+    case SOUTH: return EAST;
+    case WEST: return SOUTH;
+    default:
+      BAD_DIR;
+  }
+}
+
+int backwards(int angle) {
+  switch (angle) {
+    case NORTH: return SOUTH;
+    case SOUTH: return NORTH;
+    case EAST: return WEST;
+    case WEST: return EAST;
+    default:
+      BAD_DIR;
+  }
+}
+
+void push(s_ant *ant) {
+  switch (ant->angle) {
+    case NORTH:
+      ant->y--;
+      break;
+    case EAST:
+      ant->x++;
+      break;
+    case SOUTH:
+      ant->y++;
+      break;
+    case WEST:
+      ant->x--;
+      break;
+    default:
+      BAD_DIR;
+  }
+}
 
 
 void step(s_plane *plane, s_ant *ant) {
-  /*
-  If white: Turn right
-  Else: Turn left
-  Flip color
-  Move forward
-  */
   char *here = get_cell(plane, ant->x, ant->y);
-  //turn
-  if (*here) {
-    //White on right. Queen on color.
-    switch (ant->angle) {
-      case NORTH:
-        ant->angle = EAST;
-        break;
-      case EAST:
-        ant->angle = SOUTH;
-        break;
-      case SOUTH:
-        ant->angle = WEST;
-        break;
-      case WEST:
-        ant->angle = NORTH;
-        break;
-      default:
-        fprintf(stderr, "Ant not pointing in a known direction.\n");
-        exit(EXIT_FAILURE);
-    }
+  //adjust angle
+  switch (MOTION[(int)*here]) {
+    case 'L':
+      ant->angle = left(ant->angle);
+      break;
+    case 'R':
+      ant->angle = right(ant->angle);
+      break;
+    case 'B':
+      ant->angle = backwards(ant->angle);
+      break;
+    case 'S':
+      break;
+    default:
+      fprintf(stderr, "Bad instruction %c\n", MOTION[(int)*here]);
   }
-  else {
-    //black; left
-    switch (ant->angle) {
-      case NORTH:
-        ant->angle = WEST;
-        break;
-      case EAST:
-        ant->angle = NORTH;
-        break;
-      case SOUTH:
-        ant->angle = EAST;
-        break;
-      case WEST:
-        ant->angle = SOUTH;
-        break;
-      default:
-        fprintf(stderr, "Ant not pointing in a known direction.\n");
-        exit(EXIT_FAILURE);
-    }
-  }
-  //flip
-  *here = !(*here);
+  
+  //increment color
+  *here = (*here+1) % COLOR_COUNT;
+
   //move
-  switch (ant->angle) {
-      case NORTH:
-        ant->y--;
-        break;
-      case EAST:
-        ant->x++;
-        break;
-      case SOUTH:
-        ant->y++;
-        break;
-      case WEST:
-        ant->x--;
-        break;
-      default:
-        fprintf(stderr, "Ant not pointing in a known direction.\n");
-        exit(EXIT_FAILURE);
-  }
+  push(ant);
 }
 
 
@@ -121,8 +134,12 @@ float frandom() {
 void parse_args(int argc, char **argv) {
   char usage[] =
   "Usage: \n" \
-  "  ant [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-j JUMP] [-m SKIP] [-s SEED] [-b BORDER]\n" \
+  "  ant [-c INSTRUCTIONS] [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-j JUMP] [-m SKIP] [-s SEED] [-b BORDER]\n" \
   "\n" \
+  "-c   Sets the action to perform on each color. INSTRUCTIONS is a string [RLSB]+\n" \
+  "     Each RLSB indicates which direction to move when encountering the color at that index\n" \
+  "     (default = LR)\n" \
+  "     It defines how many colors there are.\n" \
   "-a   Sets how many ants to use.\n" \
   "-w   Sets the map width.\n" \
   "-h   Sets the map height.\n" \
@@ -153,8 +170,34 @@ void parse_args(int argc, char **argv) {
 
   opterr = 0;
   char c;
-  while ((c = getopt (argc, argv, "a:w:h:led:j:m:s:b:")) != -1) {
+  while ((c = getopt (argc, argv, "c:a:w:h:led:j:m:s:b:")) != -1) {
     switch (c) {
+      case 'c':
+        if (optarg) {
+          //get rid of the default
+          COLOR_COUNT = -1;
+          MOTION[0] = '\0', MOTION[1] = '\0';
+          char action = 1;
+          while (action) {
+            COLOR_COUNT++;
+            action = toupper(optarg[COLOR_COUNT]);
+            if (strchr("LRSB", action) == NULL) {
+              fprintf(stderr, "Instruction must be one of LRSB, not %c.\n", action);
+              exit(EXIT_FAILURE);
+            }
+            MOTION[COLOR_COUNT] = action;
+            
+            if (COLOR_COUNT == MAX_INSTRUCTIONS) {
+              fprintf(stderr, "Too many instructions.\n");
+              exit(EXIT_FAILURE);
+            }
+          }
+        }
+        else {
+          fprintf(stderr, "-%c expected argument.\n", c);
+          USE_FAIL;
+        }
+        break;
       case 'a':
         CNV_ARG(NEST_SIZE, atoi);
         break;
@@ -347,6 +390,9 @@ void setup_simulation(s_plane *plane, s_ant *nest) {
 }
 
 int main(int argc, char **argv) {
+  MOTION[0] = 'L'; //set default
+  MOTION[1] = 'R';
+  
   arg0 = argv[0];
   set_size(&WIDTH, &HEIGHT);
   parse_args(argc, argv);
