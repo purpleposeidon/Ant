@@ -306,8 +306,8 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       draw_ant(&nest[i]);
     }
   }
-  cursor_home();
-  printf("\rStats:\n\t");
+  cursor_set(1, HEIGHT+1);
+  printf("\n\r\n");
   if (1 == NEST_SIZE && dead_ants == 1) {
     //only one ant, and it abandoned you
     if (frandom() > .95) {
@@ -342,10 +342,11 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       "is leaving to share some fascinating antecdotes.",
       "has lost the antidote!",
       "fears the anteater.",
+      "makes the Aunt.",
       "thinks you smell funny.",
       "is going to sit down and think up more ant puns.",
       "has wandered off the map."};
-      int action_length = 14; //this really isn't sustainable
+      int action_length = 15; //this really isn't sustainable
       char *action = actions[(int)(action_length*frandom())];
       fprintf(stderr, "%s the %sAnt %s\n", name, title, action);
     }
@@ -354,18 +355,23 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     if (ant_fell) fprintf(stderr, "An ant has wandered off the map.\n");
     if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
   }
-  cursor_to_end();
+  fprintf(stderr, "\rStats:\n\t");
   fprintf(stderr, "\tSeed: %i\n", SEED);
   fprintf(stderr, "\tSize: %ix%i\n", WIDTH, HEIGHT);
   fprintf(stderr, "\tNest size: %i\n", NEST_SIZE);
   fprintf(stderr, "\tSimulation time: %li steps\n\n", steps_run);
-  fprintf(stderr, "Re-run simulation:\n\t%s -s %i -a %i -w %i -h %i\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT);
+
+  #define PRINT_SETTINGS \
+  fprintf(stderr, "\t%s -c %s -a %i -w %i -h %i -s %i -b %f", arg0, MOTION, NEST_SIZE, WIDTH, HEIGHT, SEED, BORDER );
+  fprintf(stderr, "Re-run simulation:\n");
+  PRINT_SETTINGS;
   if (!simulate) {
-    fprintf(stderr, "\nPseudo-continue simulation:\n\t%s -s %i -a %i -w %i -h %i -j %li\n", arg0, SEED, NEST_SIZE, WIDTH, HEIGHT, steps_run);
+    //was interrupted
+    fprintf(stderr, "\nContinue simulation:\n");
+    PRINT_SETTINGS;
+    fprintf(stderr, " -j %li", steps_run);
   }
-  cursor_to_end();
-  fprintf(stderr, "\n\n");
-  
+  fprintf(stderr, "\r\n");
 }
 
 void setup_simulation(s_plane *plane, s_ant *nest) {

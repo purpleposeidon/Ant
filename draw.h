@@ -11,7 +11,10 @@ void clear_screen();
 void cursor_home();
 void cursor_to_end();
 void cursor_set(int x, int y);
-#define cursor_to_end() cursor_set(1, HEIGHT)
+//#define cursor_to_end() cursor_set(1, HEIGHT)
+//#define cursor_to_end() cursor_set(HEIGHT, 1)
+#define cursor_to_end() cursor_set(999, 1)
+void clear_line();
 
 void delay(float time);
 
