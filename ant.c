@@ -200,6 +200,9 @@ void parse_args(int argc, char **argv) {
         break;
       case 'a':
         CNV_ARG(NEST_SIZE, atoi);
+        if (NEST_SIZE == 1) {
+          BORDER = 1.0; //not much reason in putting it somewhere other than the center
+        }
         break;
       case 'w':
         CNV_ARG(WIDTH, atoi);
