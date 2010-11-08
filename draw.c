@@ -12,11 +12,11 @@ char *color2escape[MAX_INSTRUCTIONS] = {
   //basic colors
   ATTR(30) "#",
   "\x1b[38;5;255m" "\x1b[48;5;255m" ".", //bright white; uses gray colors
-  ATTR(31) ATTR(41) "R",
   ATTR(32) ATTR(42) "G",
   ATTR(33) ATTR(43) "O",
   ATTR(34) ATTR(44) "b",
   ATTR(35) ATTR(45) "M",
+  ATTR(31) ATTR(41) "R",
   ATTR(36) ATTR(46) "t",
   //rgb colors
   RGB(75)  "1",

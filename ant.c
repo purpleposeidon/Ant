@@ -358,7 +358,8 @@ void run_simulation(s_plane *plane, s_ant *nest) {
     if (ant_fell) fprintf(stderr, "An ant has wandered off the map.\n");
     if (dead_ants == NEST_SIZE) fprintf(stderr, "All the ants have fallen off the map.\n");
   }
-  fprintf(stderr, "\rStats:\n\t");
+  printf("\r");
+  fprintf(stderr, "Stats:\n\t");
   fprintf(stderr, "\tSeed: %i\n", SEED);
   fprintf(stderr, "\tSize: %ix%i\n", WIDTH, HEIGHT);
   fprintf(stderr, "\tNest size: %i\n", NEST_SIZE);
