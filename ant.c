@@ -12,6 +12,7 @@ int LOOP = 0;
 int JUMP = 0;
 int DRAW_MOD = 1;
 int COLOR_COUNT = 2;
+long int MAX_STEPS = 1000000;
 
 #include <string.h>
 #include <ctype.h>
@@ -134,7 +135,7 @@ float frandom() {
 void parse_args(int argc, char **argv) {
   char usage[] =
   "Usage: \n" \
-  "  ant [-c INSTRUCTIONS] [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-j JUMP] [-m SKIP] [-s SEED] [-b BORDER]\n" \
+  "  ant [-c INSTRUCTIONS] [-a ANTCOUNT] [-w WIDTH] [-h HEIGHT] [-l] [-e] [-d DELAY] [-j JUMP] [-m SKIP] [-L MAX STEPS] [-s SEED] [-b BORDER]\n" \
   "\n" \
   "-c   Sets the action to perform on each color. INSTRUCTIONS is a string [RLSB]+\n" \
   "     Each RLSB indicates which direction to move when encountering the color at that index\n" \
@@ -150,6 +151,7 @@ void parse_args(int argc, char **argv) {
   "-m   Sets how many frames are drawn. Setting to low values will not speed up the simulation.\n"
   "     If 0, no frames are drawn. (Except for the last one.) If 1, all frames are drawn, and they\n"
   "     are drawn efficiently. Otherwise, the entire grid is redrawn every SKIP frames.\n" \
+  "-L   End the simulation after this many frames. Set to -1 to prevent this. (default = one million)\n" \
   "-s   Sets the seed for ant placement. (default = current time)\n" \
   "-b   Sets the border for random ant placement. (default = 0.8)\n" \
   ;
@@ -170,7 +172,7 @@ void parse_args(int argc, char **argv) {
 
   opterr = 0;
   char c;
-  while ((c = getopt (argc, argv, "c:a:w:h:led:j:m:s:b:")) != -1) {
+  while ((c = getopt (argc, argv, "c:a:w:h:led:j:m:L:s:b:")) != -1) {
     switch (c) {
       case 'c':
         if (optarg) {
@@ -225,6 +227,9 @@ void parse_args(int argc, char **argv) {
       case 'm':
         CNV_ARG(DRAW_MOD, atoi);
         break;
+      case 'L':
+        CNV_ARG(MAX_STEPS, atol);
+        break;
       case 's':
         CNV_ARG(SEED, atoi);
         USE_TIME = 0;
@@ -250,6 +255,7 @@ void run_simulation(s_plane *plane, s_ant *nest) {
   int dead_ants = 0;
   unsigned long int steps_run = 0;
   int need_full_redraw = 0;
+  if (JUMP) fprintf(stderr, "Jumping...\n");
   while (simulate && dead_ants != NEST_SIZE) {
     #define ACTIVE if (!nest[i].active) continue
     //check ant bounding
@@ -299,6 +305,8 @@ void run_simulation(s_plane *plane, s_ant *nest) {
       }
       delay(DELAY);
     }
+
+    if (steps_run > 0 && steps_run > MAX_STEPS) simulate = 0;
   }
   if (need_full_redraw) {
     //draw the last frame
